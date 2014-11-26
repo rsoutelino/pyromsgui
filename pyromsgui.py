@@ -392,10 +392,10 @@ class MainToolBar(object):
             ys = ys.reshape(1, ys.size).repeat(nlev, axis=0)
             zsec = get_zlev(hsec, sigma,  5, sc, ssh=zeta, Vtransform=2)
 
-            plt.figure()
-            plt.pcolormesh(xs, zsec, vsec)
-            plt.colorbar()
-            plt.show()
+            # plt.figure()
+            # plt.pcolormesh(xs, zsec, vsec)
+            # plt.colorbar()
+            # plt.show()
 
         mplpanel.canvas.draw()
 
