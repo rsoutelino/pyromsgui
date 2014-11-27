@@ -47,7 +47,7 @@ DEFAULT_DEPTH_FOR_LAND = -50
 
 class App(wx.App):
     def OnInit(self):
-        self.frame = Interface("PyRomsGUI 0.2.0", size=(1024,800))
+        self.frame = Interface("PyRomsGUI 0.1.0", size=(1024,800))
         self.frame.Show()
         return True
 
