@@ -29,6 +29,23 @@ ROMSVARS = dict(his = dict( axes      = ['ocean_time',
                                           'u',
                                           'v',
                                           'temp',
+                                          'salt']          ),
+
+                 clim= dict( axes     = ['ocean_time', 
+                                         's_rho', 
+                                         'eta_rho', 
+                                         'xi_rho', 
+                                         'eta_u', 
+                                         'xi_u', 
+                                         'eta_v', 
+                                         'xi_v'] ,
+
+                             variables = ['zeta',
+                                          'ubar',
+                                          'vbar',
+                                          'u',
+                                          'v',
+                                          'temp',
                                           'salt']          )
 
                )

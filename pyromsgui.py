@@ -107,7 +107,6 @@ class Interface(wx.Frame):
         self.InitMenu()
         self.Layout()
         self.Centre()
-        # self.ShowModal()
 
 
     def InitMenu(self):
@@ -352,6 +351,10 @@ class MainToolBar(object):
 
             p1, p2 = self.area[0], self.area[1]
 
+        mplpanel.canvas.draw()
+
+        if len(self.points) == 2:
+
             # assigning relevant variables
             varname = app.frame.var_select.GetValue()
             var = self.ncfile.variables[varname]
@@ -392,10 +395,10 @@ class MainToolBar(object):
             ys = ys.reshape(1, ys.size).repeat(nlev, axis=0)
             zsec = get_zlev(hsec, sigma,  5, sc, ssh=zeta, Vtransform=2)
 
-            # plt.figure()
-            # plt.pcolormesh(xs, zsec, vsec)
-            # plt.colorbar()
-            # plt.show()
+            self.vslice_dialog = VsliceDialog(app.frame, xs, ys, zsec, vsec)
+            del self.points, self.area
+
+
 
         mplpanel.canvas.draw()
 
@@ -424,6 +427,33 @@ class MainToolBar(object):
         #     del self.points, self.area
 
 
+class VsliceDialog(wx.Dialog):
+    def __init__(self, parent, xs, ys, zsec, vsec, *args, **kwargs):
+        wx.Dialog.__init__(self, parent, -1, "VARIABLE Vertical Slice, TIMERECORD", pos=(0,0), 
+                           size=(1000,600), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)  
+        
+        # put sizers, create a side control panel to swap between scatter, 
+        #    pcolormesh and contourf, control vmin, vmax, sizes, etc, etc
+        #    create functions here to update plot and stuff
+
+        mplpanel = wx.Panel(self, wx.ID_ANY, style=wx.SUNKEN_BORDER)
+        mplpanel.SetBackgroundColour("WHITE")
+        self.mplpanel = SimpleMPLCanvas(mplpanel)
+
+        ax = self.mplpanel.ax
+        # need to decide which x-axis to use, lon or lat
+        # need to put colorbar
+        # scatter, contourf or pcolormesh?
+        # ax.pcolormesh(xs, zsec, vsec)
+        ax.scatter(xs.ravel(), zsec.ravel(), s=50, c=vsec.ravel(), edgecolors='none')
+
+        self.mplpanel.canvas.draw()
+
+        # self.Layout()
+        # self.Centre()
+        self.Show()
+
+
 
 def taste_ncfile(ncfile):
     try:
@@ -433,6 +463,8 @@ def taste_ncfile(ncfile):
             filetype = 'rst'
     except AttributeError: 
         print "Not a standard ROMS file !"
+        filetype = 'clim' # old wrapper
+
 
     varlist  = ROMSVARS[filetype]['variables']
     axeslist = ROMSVARS[filetype]['axes']
@@ -516,7 +548,7 @@ def load_bitmap(filename, direc=None):
 
 if __name__ == "__main__":
     app = App(False)
-    # app.MainLoop()
+    app.MainLoop()
 
 
 
