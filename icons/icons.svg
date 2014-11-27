@@ -7594,7 +7594,7 @@
     <rect
        inkscape:export-ydpi="8.7174807"
        inkscape:export-xdpi="8.7174807"
-       inkscape:export-filename="/home/rsoutelino/metocean/github/roms/tools/icons/land_area.png"
+       inkscape:export-filename="/source/pyromsgui/icons/save.png"
        transform="matrix(1,-5.7611481e-6,5.7611481e-6,1,0,0)"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:35;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;filter:url(#filter4738);enable-background:accumulate"
        id="rect4479"
@@ -7605,32 +7605,17 @@
     <rect
        inkscape:export-ydpi="8.7174807"
        inkscape:export-xdpi="8.7174807"
-       inkscape:export-filename="/home/rsoutelino/metocean/github/roms/tools/icons/land_area.png"
+       inkscape:export-filename="/source/pyromsgui/icons/save.png"
        y="-2157.5894"
        x="2019.5725"
        height="420.39499"
        width="420.79208"
        id="rect4481"
        style="color:#000000;fill:#543005;fill-opacity:1;fill-rule:nonzero;stroke:#543005;stroke-width:35;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-    <flowRoot
-       transform="matrix(7.9570871,0,0,7.9570872,-4289.4039,18548.453)"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;opacity:0.47325104;fill:#000000;fill-opacity:1;stroke:#ffffff;font-family:Sans"
-       id="flowRoot4499"
-       xml:space="preserve"
-       inkscape:export-filename="/home/rsoutelino/metocean/github/roms/tools/icons/land_area.png"
-       inkscape:export-xdpi="8.7174807"
-       inkscape:export-ydpi="8.7174807"><flowRegion
-         id="flowRegion4501"><rect
-           y="-2603.3696"
-           x="805.50024"
-           height="507.31024"
-           width="561.52661"
-           id="rect4503"
-           style="fill:#000000;stroke:#ffffff" /></flowRegion><flowPara
-         id="flowPara4505">A</flowPara></flowRoot>    <path
+    <path
        inkscape:export-ydpi="8.7174807"
        inkscape:export-xdpi="8.7174807"
-       inkscape:export-filename="/home/rsoutelino/metocean/github/roms/tools/icons/land_area.png"
+       inkscape:export-filename="/source/pyromsgui/icons/save.png"
        sodipodi:nodetypes="ccsccc"
        inkscape:connector-curvature="0"
        id="path4483"
@@ -7770,7 +7755,7 @@
          y="-1952.7734"
          x="2203.5078"
          id="tspan4497"
-         sodipodi:role="line"></tspan></text>
+         sodipodi:role="line" /></text>
     <path
        inkscape:connector-curvature="0"
        d="m 1664.4504,348.30255 c 0,-69.97812 -27.7989,-137.09024 -77.2813,-186.57263 -49.4824,-49.48239 -116.5944,-77.28134 -186.5726,-77.28134 l -1055.41951,0 c -69.97905,0 -137.09117,27.79895 -186.57356,77.28134 -49.48146,49.48239 -77.281334,116.59451 -77.281334,186.57263 l 0,1055.41855 c 0,69.9791 27.798944,137.0912 77.281334,186.5726 49.48239,49.4825 116.59451,77.2815 186.57356,77.2815 l 1055.41861,0 c 69.9791,0 137.0903,-27.799 186.5726,-77.2815 49.4824,-49.4814 77.2813,-116.5944 77.2813,-186.5726 l 0,-1055.41855 9e-4,0 z"
@@ -8960,5 +8945,20 @@
            height="507.31024"
            x="805.50024"
            y="-2603.3696" /></flowRegion><flowPara
-         id="flowPara4529">A</flowPara></flowRoot>  </g>
+         id="flowPara4529">A</flowPara></flowRoot>    <text
+       xml:space="preserve"
+       style="font-size:97.7782135px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="2067.5156"
+       y="-1901.1301"
+       id="text4492"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/source/pyromsgui/icons/save.png"
+       inkscape:export-xdpi="8.7174807"
+       inkscape:export-ydpi="8.7174807"><tspan
+         sodipodi:role="line"
+         id="tspan4494"
+         x="2067.5156"
+         y="-1901.1301"
+         style="font-weight:bold;-inkscape-font-specification:Sans Bold">VSlice</tspan></text>
+  </g>
 </svg>

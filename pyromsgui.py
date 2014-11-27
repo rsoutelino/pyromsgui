@@ -22,7 +22,9 @@ import netCDF4 as nc
 from lib import *
 
 # TO-DO LIST: ====================================================
-#   - start
+#   - correct bug with date selection: somehow the times re-start
+#       every 00z
+#   - need to decide which x-axis to use, lon or lat
 # ================================================================
 
 # NICE TIP TO DEBUG THIS PROGRAM: ================================
@@ -45,7 +47,7 @@ DEFAULT_DEPTH_FOR_LAND = -50
 
 class App(wx.App):
     def OnInit(self):
-        self.frame = Interface("PyRomsGUI 0.1.0", size=(1024,800))
+        self.frame = Interface("PyRomsGUI 0.2.0", size=(1024,800))
         self.frame.Show()
         return True
 
@@ -99,7 +101,6 @@ class Interface(wx.Frame):
         # FINAL LAYOUT CONFIGURATIONS ============================
         self.SetAutoLayout(True)
         panel1.SetSizer(box2)
-        # panel2.SetSizer(box4)
         mplpanel.SetSizer(box3)
 
         self.SetSizer(box1)
@@ -395,63 +396,120 @@ class MainToolBar(object):
             ys = ys.reshape(1, ys.size).repeat(nlev, axis=0)
             zsec = get_zlev(hsec, sigma,  5, sc, ssh=zeta, Vtransform=2)
 
+            xs = np.ma.masked_where(vsec > 1e20, xs)
+            ys = np.ma.masked_where(vsec > 1e20, ys)
+            zsec = np.ma.masked_where(vsec > 1e20, zsec)
+            vsec = np.ma.masked_where(vsec > 1e20, vsec)
+            
             self.vslice_dialog = VsliceDialog(app.frame, xs, ys, zsec, vsec)
             del self.points, self.area
 
-
-
         mplpanel.canvas.draw()
-
-
-        # elif button == 3:
-        #     grd = self.grd
-        #     path = Path( self.area )
-        #     a, b = grd.lonr.shape
-        #     for i in range(a):
-        #         for j in range(b):
-        #             if path.contains_point( [grd.lonr[i, j], 
-        #                                      grd.latr[i, j] ] ) == 1:
-        #                 grd.maskr[i,j] = 0
-        #                 grd.h[i,j] = grd.hmin
-
-        #     ax.clear()
-        #     self.pcolor = ax.pcolormesh(grd.lonr, grd.latr, grd.maskr, 
-        #                            vmin=DEFAULT_VMIN, vmax=DEFAULT_VMAX, 
-        #                            cmap=DEFAULT_CMAP)
-        #     ax.plot(grd.lonr, grd.latr, 'k', alpha=0.2)
-        #     ax.plot(grd.lonr.transpose(), grd.latr.transpose(), 'k', alpha=0.2)
-        #     ax.set_xlim([grd.lonr.min(), grd.lonr.max()])
-        #     ax.set_ylim([grd.latr.min(), grd.latr.max()])
-        #     ax.set_aspect('equal')
-        #     mplpanel.canvas.draw()
-        #     del self.points, self.area
 
 
 class VsliceDialog(wx.Dialog):
     def __init__(self, parent, xs, ys, zsec, vsec, *args, **kwargs):
         wx.Dialog.__init__(self, parent, -1, "VARIABLE Vertical Slice, TIMERECORD", pos=(0,0), 
-                           size=(1000,600), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)  
+                           size=(1200,600), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)  
         
-        # put sizers, create a side control panel to swap between scatter, 
-        #    pcolormesh and contourf, control vmin, vmax, sizes, etc, etc
-        #    create functions here to update plot and stuff
+        self.xs, self.ys, self.zsec, self.vsec = xs, ys, zsec, vsec
 
+        # BASIC LAYOUT OF THE NESTED SIZERS ======================
+        panel1 = wx.Panel(self, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         mplpanel = wx.Panel(self, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         mplpanel.SetBackgroundColour("WHITE")
+
+        # BOX 1 is the main sizer
+        box1 = wx.BoxSizer(wx.HORIZONTAL)
+        box1.Add(panel1, 1, wx.EXPAND)
+        box1.Add(mplpanel, 4, wx.EXPAND)
+
+        # BOX 2 is the inner sizer of the left control panel
+        box2 = wx.BoxSizer(wx.VERTICAL)
+        # BOX 3 is the sizer of the panel1
+        box3 = wx.BoxSizer(wx.VERTICAL)
+
+        # panel 1 content ========================================
+        plot_type = wx.StaticText(panel1, label="Plot type")
+        box2.Add(plot_type, proportion=0, flag=wx.CENTER)
+        self.plot_select = wx.ComboBox(panel1, value='scatter')
+        box2.Add(self.plot_select, proportion=0, flag=wx.CENTER)
+        self.plot_select.Bind(wx.EVT_COMBOBOX, self.OnUpdatePlot)
+        self.plot_select.SetItems(['scatter',  'pcolormesh', 
+                                   'contourf', 'contour'])
+
+        minmax = wx.StaticText(panel1, label="Range")
+        box2.Add(minmax, proportion=0, flag=wx.CENTER)
+        self.max = wx.TextCtrl(panel1, value=str(vsec.max()))
+        self.min = wx.TextCtrl(panel1, value=str(vsec.min()))
+        box2.Add(self.max, proportion=0, flag=wx.CENTER)
+        box2.Add(self.min, proportion=0, flag=wx.CENTER)
+
+        scale = wx.StaticText(panel1, label="Scatter scale")
+        box2.Add(scale, proportion=0, flag=wx.CENTER)
+        self.scatter_scale = wx.SpinCtrl(panel1, value='50')
+        box2.Add(self.scatter_scale, proportion=0, flag=wx.CENTER)
+
+        # mplpanel content ========================================
         self.mplpanel = SimpleMPLCanvas(mplpanel)
+        box3.Add(self.mplpanel.canvas, 1, flag=wx.CENTER) 
 
         ax = self.mplpanel.ax
-        # need to decide which x-axis to use, lon or lat
-        # need to put colorbar
-        # scatter, contourf or pcolormesh?
-        # ax.pcolormesh(xs, zsec, vsec)
-        ax.scatter(xs.ravel(), zsec.ravel(), s=50, c=vsec.ravel(), edgecolors='none')
+        pl = ax.scatter(xs.ravel(), zsec.ravel(), s=50, c=vsec.ravel(), 
+                        edgecolors='none')
+        self.mplpanel.ax2 = self.mplpanel.fig.add_axes([0.93, 0.15, 0.015, 0.7])
+        ax2 = self.mplpanel.ax2
+        cbar = self.mplpanel.fig.colorbar(pl, cax=ax2)
+
+        ax.set_xlim([xs.min(), xs.max()])
+        ax.set_ylim([zsec.min(), zsec.max()])
 
         self.mplpanel.canvas.draw()
 
-        # self.Layout()
-        # self.Centre()
+
+        # FINAL LAYOUT CONFIGURATIONS ============================
+        self.SetAutoLayout(True)
+        panel1.SetSizer(box2)
+        mplpanel.SetSizer(box3)
+
+        self.SetSizer(box1)
         self.Show()
+
+
+    def OnUpdatePlot(self, evt):
+        xs, ys, zsec, vsec = self.xs, self.ys, self.zsec, self.vsec 
+        ax, ax2 = self.mplpanel.ax, self.mplpanel.ax2
+        ax.clear()
+        ax2.clear()
+
+        vmin, vmax = float(self.min.GetValue()), float(self.max.GetValue())
+        plot_type = self.plot_select.GetValue()
+        sc = self.scatter_scale.GetValue()
+
+        if plot_type == 'scatter':
+            pl = ax.scatter(xs.ravel(), zsec.ravel(), s=sc, c=vsec.ravel(), 
+                            vmin=vmin, vmax=vmax, edgecolors='none')
+        elif plot_type == 'pcolormesh':
+            pl = ax.pcolormesh(xs, zsec, vsec, vmin=vmin, vmax=vmax)
+        elif plot_type == 'contourf':
+            zsec = np.array(zsec)
+            f = np.where(np.isnan(zsec) == True)
+            zsec[f] = 0
+            levs = np.linspace(vmin, vmax, 50)
+            pl = ax.contourf(xs, zsec, vsec, levs)
+        elif plot_type == 'contour':
+            zsec = np.array(zsec)
+            f = np.where(np.isnan(zsec) == True)
+            zsec[f] = 0
+            levs = np.linspace(vmin, vmax, 50)
+            pl = ax.contour(xs, zsec, vsec, levs)
+
+        ax.set_xlim([xs.min(), xs.max()])
+        ax.set_ylim([zsec.min(), zsec.max()])
+        cbar = self.mplpanel.fig.colorbar(pl, cax=ax2)
+
+        self.mplpanel.canvas.draw()
+
 
 
 
