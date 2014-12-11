@@ -15,7 +15,7 @@ cd pyromsgui
 python setup.py install
 ```
 
-Installing from pypy
+Installing from pypi
 ----
 ```
 pip install pyromsgui
