@@ -1,7 +1,7 @@
 import numpy as np
 
 
-ROMSVARS = dict(his = dict( axes      = ['ocean_time', 
+ROMSVARS = dict(his = dict( axes      = ['ocean_time',
                                          's_rho', 
                                          'eta_rho', 
                                          'xi_rho'] ,

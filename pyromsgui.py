@@ -216,7 +216,7 @@ class MainToolBar(object):
 
     def OnLoadFile(self, evt):
         openFileDialog = wx.FileDialog(self.parent, "Open roms netcdf file [*.nc]",
-                                       "/ops/forecast/roms/", " ",
+                                       "/ops/hindcast/roms/", " ",
                                        "netcdf files (*.nc)|*.nc",
                                        wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
@@ -236,7 +236,7 @@ class MainToolBar(object):
 
         # opening ROMS grid
         openFileDialog = wx.FileDialog(self.parent, "Open roms GRID netcdf file [*_grd.nc]",
-                                       "/ops/forecast/roms/", " ",
+                                       "/ops/hindcast/roms/", " ",
                                        "netcdf files (*.nc)|*.nc",
                                        wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
@@ -529,7 +529,10 @@ def taste_ncfile(ncfile):
 
     for axes in axeslist:
         if 'time' in axes:
-            time = ncfile.variables[axes]
+            try:
+                time = ncfile.variables[axes]
+            except KeyError:
+                time = ncfile.variables['time'] # for non-default axes name
         else:
             pass
 
