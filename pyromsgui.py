@@ -171,7 +171,7 @@ class MainToolBar(object):
     def __init__(self, parent):
         self.currentDirectory = os.getcwd()
         self.parent = parent
-        self.toolbar = parent.CreateToolBar(style=1, winid=1,
+        self.toolbar = parent.CreateToolBar(style=1, id=1,
                                             name="Toolbar")
         self.tools_params ={ 
             'load_file': (load_bitmap('grid.png'), u"Load ROMS netcdf file",
@@ -208,8 +208,7 @@ class MainToolBar(object):
 
 
     def createTool(self, parent, params, evt, isToggle=False):
-        tool = parent.AddTool(wx.NewId(), bitmap=params[0], shortHelpString=params[1],
-                    longHelpString=params[2], isToggle=isToggle)
+        tool = parent.AddTool(wx.NewId(), 'a', params[0], shortHelp=params[1])
         self.parent.Bind(wx.EVT_TOOL, evt, id=tool.GetId())
         return tool
 
@@ -272,6 +271,7 @@ class MainToolBar(object):
         varlist, axeslist, time = taste_ncfile(self.ncfile)
         timestr = app.frame.time_select.GetValue()
         selected_time = string2romsTime(timestr, self.ncfile)
+        # from IPython import embed; embed()
         tindex = np.where( time[:] == selected_time )[0][0]
 
         if len(dimensions) == 3:
