@@ -192,10 +192,10 @@ class MainToolBar(object):
                         self.OnLoadCoastline)
 
         self.toolbar.AddSeparator()
-
+        # from IPython import embed; embed()
         self.plot_vslice = self.createTool(self.toolbar, 
                                            self.tools_params['plot_vslice'], 
-                                           self.OnPlotVslice, isToggle=True)
+                                           self.OnPlotVslice)
 
         self.toolbar.AddSeparator()
 
@@ -251,7 +251,7 @@ class MainToolBar(object):
 
         mplpanel = app.frame.mplpanel
         ax = mplpanel.ax
-        self.pcolor = ax.pcolormesh(lon, lat, h)
+        self.pcolor = ax.pcolormesh(lon, lat, h, cmap=plt.cm.terrain_r)
         ax.set_xlim([lon.min(), lon.max()])
         ax.set_ylim([lat.min(), lat.max()])
         ax.set_aspect('equal')
@@ -260,6 +260,7 @@ class MainToolBar(object):
 
 
     def OnUpdateHslice(self, evt):
+        # from IPython import embed; embed()
         varname = app.frame.var_select.GetValue()
         var = self.ncfile.variables[varname]
         dimensions = var.dimensions
@@ -282,7 +283,7 @@ class MainToolBar(object):
         mplpanel = app.frame.mplpanel
         ax = mplpanel.ax
         ax.clear()
-        ax.pcolormesh(lon, lat, arr)
+        ax.pcolormesh(lon, lat, arr, cmap=plt.cm.jet)
         ax.set_xlim([lon.min(), lon.max()])
         ax.set_ylim([lat.min(), lat.max()])
         ax.set_title("%s   %s" %(varname, timestr))
@@ -321,11 +322,7 @@ class MainToolBar(object):
 
     def OnPlotVslice(self, evt):
         mplpanel = app.frame.mplpanel
-
-        if self.plot_vslice.IsToggled():
-            self.cid = mplpanel.canvas.mpl_connect('button_press_event', self.vslice)
-        else:
-            mplpanel.canvas.mpl_disconnect(self.cid)
+        self.cid = mplpanel.canvas.mpl_connect('button_press_event', self.vslice)
 
 
     def OnSettings(self, evt):
@@ -338,7 +335,7 @@ class MainToolBar(object):
         ax = mplpanel.ax
         x, y = evt.xdata, evt.ydata
         button = evt.button
-        p = ax.plot(x, y, 'wo')
+        p = ax.plot(x, y, 'wo', markeredgecolor='k')
         try:
             self.points.append(p)
             self.area.append( (x, y) )
@@ -456,7 +453,7 @@ class VsliceDialog(wx.Dialog):
 
         ax = self.mplpanel.ax
         pl = ax.scatter(xs.ravel(), zsec.ravel(), s=50, c=vsec.ravel(), 
-                        edgecolors='none')
+                        edgecolors='none', cmap=plt.cm.jet)
         self.mplpanel.ax2 = self.mplpanel.fig.add_axes([0.93, 0.15, 0.015, 0.7])
         ax2 = self.mplpanel.ax2
         cbar = self.mplpanel.fig.colorbar(pl, cax=ax2)
@@ -488,21 +485,21 @@ class VsliceDialog(wx.Dialog):
 
         if plot_type == 'scatter':
             pl = ax.scatter(xs.ravel(), zsec.ravel(), s=sc, c=vsec.ravel(), 
-                            vmin=vmin, vmax=vmax, edgecolors='none')
+                            vmin=vmin, vmax=vmax, edgecolors='none', cmap=plt.cm.jet)
         elif plot_type == 'pcolormesh':
-            pl = ax.pcolormesh(xs, zsec, vsec, vmin=vmin, vmax=vmax)
+            pl = ax.pcolormesh(xs, zsec, vsec, vmin=vmin, vmax=vmax, cmap=plt.cm.jet)
         elif plot_type == 'contourf':
             zsec = np.array(zsec)
             f = np.where(np.isnan(zsec) == True)
             zsec[f] = 0
             levs = np.linspace(vmin, vmax, 50)
-            pl = ax.contourf(xs, zsec, vsec, levs)
+            pl = ax.contourf(xs, zsec, vsec, levs, cmap=plt.cm.jet)
         elif plot_type == 'contour':
             zsec = np.array(zsec)
             f = np.where(np.isnan(zsec) == True)
             zsec[f] = 0
             levs = np.linspace(vmin, vmax, 50)
-            pl = ax.contour(xs, zsec, vsec, levs)
+            pl = ax.contour(xs, zsec, vsec, levs, cmap=plt.cm.jet)
 
         ax.set_xlim([xs.min(), xs.max()])
         ax.set_ylim([zsec.min(), zsec.max()])
