@@ -78,7 +78,7 @@ google-auth-httplib2==0.0.3
 gprof2dot==2017.9.19
 gsw==3.0.3
 html5lib==0.999999999
-httplib2==0.11.3
+httplib2==0.18.0
 idna==2.6
 imagesize==1.1.0
 influxdb==5.2.1
