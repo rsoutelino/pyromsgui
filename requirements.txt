@@ -38,7 +38,7 @@ cmocean==1.1
 coverage==5.0a2
 crcmod==1.7
 crypto==1.4.1
-cryptography==2.2.2
+cryptography==3.2
 cycler==0.10.0
 Cython==0.28.4
 dap==2.2.6.7
