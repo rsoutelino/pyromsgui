@@ -11,15 +11,18 @@ from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtWidgets import QDialog
-from PyQt5.QtWidgets import QPushButton
-from PyQt5.QtWidgets import QToolBar
-from PyQt5.QtWidgets import QHBoxLayout
-from PyQt5.QtWidgets import QStatusBar
-from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import (
+    QLineEdit,
+    QDialog,
+    QSlider,
+    QPushButton,
+    QToolBar,
+    QHBoxLayout,
+    QStatusBar,
+    QVBoxLayout,
+    QMessageBox,
+    QLabel,
+)
 
 
 from matplotlib.backends.backend_qt5agg import (
@@ -69,18 +72,18 @@ class Ui(QMainWindow):
     def _createToolBar(self):
         tools = QToolBar()
         self.addToolBar(tools)
-        tools.addAction("GRD", not_implemented)
-        tools.addAction("NUD", not_implemented)
-        tools.addAction("INI", not_implemented)
-        tools.addAction("BRY", not_implemented)
-        tools.addAction("CLM", not_implemented)
-        tools.addAction("HIS", not_implemented)
-        tools.addAction("AVG", not_implemented)
-        tools.addAction("QKS", not_implemented)
-        tools.addAction("DIA", not_implemented)
-        tools.addAction("FRC", not_implemented)
-        tools.addAction("RIV", not_implemented)
-        tools.addAction("TIDE", not_implemented)
+        tools.addAction("GRD", partial(self.update_plot, "b"))
+        tools.addAction("NUD", partial(self.update_plot, "g"))
+        tools.addAction("INI", partial(self.update_plot, "r"))
+        tools.addAction("BRY", partial(self.update_plot, "k"))
+        tools.addAction("CLM", partial(self.update_plot, "y"))
+        tools.addAction("HIS", partial(self.update_plot, "m"))
+        tools.addAction("AVG", partial(self.update_plot, "b"))
+        tools.addAction("QKS", partial(self.update_plot, "g"))
+        tools.addAction("DIA", partial(self.update_plot, "r"))
+        tools.addAction("FRC", partial(self.update_plot, "k"))
+        tools.addAction("RIV", partial(self.update_plot, "y"))
+        tools.addAction("TIDE", partial(self.update_plot, "m"))
         tools.addAction("Quit", self.close)
 
     def _createSideBar(self):
@@ -99,8 +102,14 @@ class Ui(QMainWindow):
         layout.addWidget(plot_type)
 
         colorbar = QComboBox()
-        colorbar.addItems(["virids", "jet", "RdBu"])
+        colorbar.addItems(["black", "blue", "red", "green"])
+        colorbar.activated[str].connect(self.set_plot_color)
         layout.addWidget(colorbar)
+
+        alpha = QSlider(Qt.Horizontal)
+        alpha.setValue(50)
+        alpha.valueChanged[int].connect(self.set_plot_alpha)
+        layout.addWidget(alpha)
 
         layout.addWidget(QPushButton("Vmin"))
         layout.addWidget(QPushButton("Vmax"))
@@ -110,15 +119,15 @@ class Ui(QMainWindow):
         self.generalLayout.addWidget(widget)
 
     def _createMplCanvas(self):
-        sc = MplCanvas(self, width=5, height=4, dpi=100)
-        sc.axes.plot(np.random.randn(500), alpha=0.4)
+        self.mplcanvas = MplCanvas(self, width=5, height=4, dpi=100)
+        self.update_plot("k")
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        toolbar = NavigationToolbar(sc, self)
+        toolbar = NavigationToolbar(self.mplcanvas, self)
 
         layout = QVBoxLayout()
         layout.addWidget(toolbar)
-        layout.addWidget(sc)
+        layout.addWidget(self.mplcanvas)
 
         # Create a placeholder widget to hold our toolbar and canvas.
         widget = QWidget()
@@ -130,9 +139,23 @@ class Ui(QMainWindow):
         status.showMessage("Ready...")
         self.setStatusBar(status)
 
+    def update_plot(self, color):
+        data = np.random.randn(500)
+        self.mplcanvas.axes.cla()
+        self._plot = self.mplcanvas.axes.plot(data, color, alpha=0.5)
+        self.mplcanvas.draw()
 
-class Controller:
-    pass
+    def set_plot_color(self, color):
+        for line2d in self._plot:
+            line2d.set_color(color)
+
+        self.mplcanvas.draw()
+
+    def set_plot_alpha(self, val):
+        for line2d in self._plot:
+            line2d.set_alpha(val / 100)
+
+        self.mplcanvas.draw()
 
 
 def not_implemented():
