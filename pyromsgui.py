@@ -12,11 +12,13 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QStatusBar
 from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QLabel
 
 
@@ -54,31 +56,31 @@ class Ui(QMainWindow):
 
     def _createMenu(self):
         self.fileMenu = self.menuBar().addMenu("&File")
-        self.fileMenu.addAction("&Load roms_grd.nc", self.close)
-        self.fileMenu.addAction("&Load roms_clm.nc", self.close)
-        self.fileMenu.addAction("&Load roms_ini.nc", self.close)
-        self.fileMenu.addAction("&Load roms_his.nc", self.close)
-        self.fileMenu.addAction("&Exit", self.close)
+        self.fileMenu.addAction("&Load roms_grd.nc", not_implemented)
+        self.fileMenu.addAction("&Load roms_clm.nc", not_implemented)
+        self.fileMenu.addAction("&Load roms_ini.nc", not_implemented)
+        self.fileMenu.addAction("&Load roms_his.nc", not_implemented)
+        self.fileMenu.addAction("&Quit", self.close)
 
         self.toolsMenu = self.menuBar().addMenu("&Plot")
-        self.toolsMenu.addAction("&Hslice", self.close)
-        self.toolsMenu.addAction("&Vslice", self.close)
+        self.toolsMenu.addAction("&Hslice", not_implemented)
+        self.toolsMenu.addAction("&Vslice", not_implemented)
 
     def _createToolBar(self):
         tools = QToolBar()
         self.addToolBar(tools)
-        tools.addAction("GRD", self.close)
-        tools.addAction("NUD", self.close)
-        tools.addAction("INI", self.close)
-        tools.addAction("BRY", self.close)
-        tools.addAction("CLM", self.close)
-        tools.addAction("HIS", self.close)
-        tools.addAction("AVG", self.close)
-        tools.addAction("QKS", self.close)
-        tools.addAction("DIA", self.close)
-        tools.addAction("FRC", self.close)
-        tools.addAction("RIV", self.close)
-        tools.addAction("TIDE", self.close)
+        tools.addAction("GRD", not_implemented)
+        tools.addAction("NUD", not_implemented)
+        tools.addAction("INI", not_implemented)
+        tools.addAction("BRY", not_implemented)
+        tools.addAction("CLM", not_implemented)
+        tools.addAction("HIS", not_implemented)
+        tools.addAction("AVG", not_implemented)
+        tools.addAction("QKS", not_implemented)
+        tools.addAction("DIA", not_implemented)
+        tools.addAction("FRC", not_implemented)
+        tools.addAction("RIV", not_implemented)
+        tools.addAction("TIDE", not_implemented)
         tools.addAction("Quit", self.close)
 
     def _createSideBar(self):
@@ -131,6 +133,15 @@ class Ui(QMainWindow):
 
 class Controller:
     pass
+
+
+def not_implemented():
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Critical)
+    # msg.setText("Error")
+    msg.setInformativeText("Coming soon...")
+    msg.setWindowTitle("Not found")
+    msg.exec_()
 
 
 # Client code
