@@ -1,4 +1,5 @@
 import sys
+from os.path import basename
 from functools import partial
 
 import numpy as np
@@ -22,14 +23,16 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QMessageBox,
     QLabel,
+    QFileDialog,
 )
-
 
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
+
+from settings import *
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -72,19 +75,8 @@ class Ui(QMainWindow):
     def _createToolBar(self):
         tools = QToolBar()
         self.addToolBar(tools)
-        tools.addAction("GRD", partial(self.update_plot, "b"))
-        tools.addAction("NUD", partial(self.update_plot, "g"))
-        tools.addAction("INI", partial(self.update_plot, "r"))
-        tools.addAction("BRY", partial(self.update_plot, "k"))
-        tools.addAction("CLM", partial(self.update_plot, "y"))
-        tools.addAction("HIS", partial(self.update_plot, "m"))
-        tools.addAction("AVG", partial(self.update_plot, "b"))
-        tools.addAction("QKS", partial(self.update_plot, "g"))
-        tools.addAction("DIA", partial(self.update_plot, "r"))
-        tools.addAction("FRC", partial(self.update_plot, "k"))
-        tools.addAction("RIV", partial(self.update_plot, "y"))
-        tools.addAction("TIDE", partial(self.update_plot, "m"))
-        tools.addAction("Quit", self.close)
+        for key in RomsNCFiles.__dataclass_fields__.keys():
+            tools.addAction(key.upper(), partial(self.openFile, f"*_{key}*.nc"))
 
     def _createSideBar(self):
         layout = QVBoxLayout()
@@ -139,6 +131,19 @@ class Ui(QMainWindow):
         status.showMessage("Ready...")
         self.setStatusBar(status)
 
+    def openFile(self, pattern="*.nc"):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(
+            self,
+            "QFileDialog.getOpenFileName()",
+            "/source/roms-py/tests",
+            f"NetCDF Files ({pattern});;All Files (*)",
+            options=options,
+        )
+        if fileName:
+            print(fileName)
+
     def update_plot(self, color):
         data = np.random.randn(500)
         self.mplcanvas.axes.cla()
@@ -156,6 +161,12 @@ class Ui(QMainWindow):
             line2d.set_alpha(val / 100)
 
         self.mplcanvas.draw()
+
+
+def detect_roms_file(filepath):
+    for key in RomsNCFiles.__dataclass_fields__.keys():
+        if key in basename(filepath):
+            return key
 
 
 def not_implemented():
