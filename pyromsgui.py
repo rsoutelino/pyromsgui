@@ -1,12 +1,13 @@
+from datetime import time
 import sys
 from os.path import basename
 from functools import partial
 
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import xarray as xr
 
-matplotlib.use("Qt5Agg")
+mpl.use("Qt5Agg")
 
 from PyQt5.QtWidgets import QApplication, QComboBox
 from PyQt5.QtWidgets import QMainWindow
@@ -27,11 +28,11 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 
-from matplotlib.backends.backend_qt5agg import (
+from mpl.backends.backend_qt5agg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT as NavigationToolbar,
 )
-from matplotlib.figure import Figure
+from mpl.figure import Figure
 
 from settings import *
 
@@ -82,22 +83,20 @@ class Ui(QMainWindow):
     def _createSideBar(self):
         layout = QVBoxLayout()
 
-        variable = QComboBox()
-        variable.addItems(["temp", "salt", "zeta"])
-        layout.addWidget(variable)
+        self.variables = QComboBox()
+        layout.addWidget(self.variables)
 
-        record = QComboBox()
-        record.addItems(["2021-09-03 00:00", "2021-09-03 01:00", "2021-09-03 02:00"])
-        layout.addWidget(record)
+        self.recs = QComboBox()
+        layout.addWidget(self.recs)
 
-        plot_type = QComboBox()
-        plot_type.addItems(["contourf", "pcolormesh", "scatter"])
-        layout.addWidget(plot_type)
+        plot_types = QComboBox()
+        plot_types.addItems(["contourf", "pcolormesh", "scatter"])
+        layout.addWidget(plot_types)
 
-        colorbar = QComboBox()
-        colorbar.addItems(["black", "blue", "red", "green"])
-        colorbar.activated[str].connect(self.set_plot_color)
-        layout.addWidget(colorbar)
+        colorbars = QComboBox()
+        colorbars.addItems(["black", "blue", "red", "green"])
+        colorbars.activated[str].connect(self.set_plot_color)
+        layout.addWidget(colorbars)
 
         alpha = QSlider(Qt.Horizontal)
         alpha.setValue(50)
@@ -109,6 +108,8 @@ class Ui(QMainWindow):
 
         widget = QWidget()
         widget.setLayout(layout)
+        widget.setFixedWidth(180)
+
         self.generalLayout.addWidget(widget)
 
     def _createMplCanvas(self):
@@ -143,11 +144,12 @@ class Ui(QMainWindow):
             options=options,
         )
         if filename:
-            self.first_plot(filename)
+            self.hslice(filename)
 
-    def first_plot(self, filename):
+    def hslice(self, filename, variable=None):
         ds = xr.open_dataset(filename)
-        da = ds[getattr(firstvar, detect_roms_file(filename))]
+        var = variable or getattr(firstvar, detect_roms_file(filename))
+        da = ds[var]
         da = last2d(da)
         for ax in self.mplcanvas.figure.axes:
             ax.remove()
@@ -157,13 +159,21 @@ class Ui(QMainWindow):
         self._plot = da.plot(ax=self.mplcanvas.axes)
         self.mplcanvas.draw()
 
-    def update_plot(self, color):
-        data = np.random.randn(500)
-        self.mplcanvas.axes.cla()
-        self._plot = self.mplcanvas.axes.plot(data, color, alpha=0.5)
-        self.mplcanvas.draw()
+        # update variables
+        self.variables.clear()
+        self.variables.addItems(ds.data_vars.keys())
+        self.variables.setCurrentText(var)
 
-    def set_plot_color(self, color):
+        # update time records
+        self.recs.clear()
+        for dim in ds.dims.keys():
+            if "time" in dim:
+                times = [str(t).split(".")[0].replace("T", " ") for t in ds[dim].values]
+                self.recs.addItems(times)
+                self.recs.setCurrentText(var)
+                break
+
+    def set_colorbar(self, cbar):
         for line2d in self._plot:
             line2d.set_color(color)
 
