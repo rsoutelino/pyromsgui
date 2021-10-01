@@ -4,6 +4,7 @@ from functools import partial
 
 import numpy as np
 import matplotlib
+import xarray as xr
 
 matplotlib.use("Qt5Agg")
 
@@ -134,15 +135,22 @@ class Ui(QMainWindow):
     def openFile(self, pattern="*.nc"):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(
+        filename, _ = QFileDialog.getOpenFilename(
             self,
             "QFileDialog.getOpenFileName()",
             "/source/roms-py/tests",
             f"NetCDF Files ({pattern});;All Files (*)",
             options=options,
         )
-        if fileName:
-            print(fileName)
+        if filename:
+            self.first_plot(filename)
+
+    def first_plot(self, filename):
+        ds = xr.open_dataset(filename)
+        da = ds[firstvar[detect_roms_file(filename)]]
+        slc = last2d(da)
+        self._plot = da[slc].plot(ax=self.mplcanvas.axes)
+        self.mplcanvas.draw()
 
     def update_plot(self, color):
         data = np.random.randn(500)
@@ -167,6 +175,15 @@ def detect_roms_file(filepath):
     for key in RomsNCFiles.__dataclass_fields__.keys():
         if key in basename(filepath):
             return key
+
+
+def last2d(data_array):
+    if data_array.ndim <= 2:
+        return data_array
+
+    slc = [0] * (data_array.ndim - 2)
+    slc += [slice(None), slice(None)]
+    return slc
 
 
 def not_implemented():
