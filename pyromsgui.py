@@ -135,7 +135,7 @@ class Ui(QMainWindow):
     def openFile(self, pattern="*.nc"):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        filename, _ = QFileDialog.getOpenFilename(
+        filename, _ = QFileDialog.getOpenFileName(
             self,
             "QFileDialog.getOpenFileName()",
             "/source/roms-py/tests",
@@ -147,9 +147,14 @@ class Ui(QMainWindow):
 
     def first_plot(self, filename):
         ds = xr.open_dataset(filename)
-        da = ds[firstvar[detect_roms_file(filename)]]
-        slc = last2d(da)
-        self._plot = da[slc].plot(ax=self.mplcanvas.axes)
+        da = ds[getattr(firstvar, detect_roms_file(filename))]
+        da = last2d(da)
+        for ax in self.mplcanvas.figure.axes:
+            ax.remove()
+
+        self.mplcanvas.axes = self.mplcanvas.figure.add_subplot(111)
+
+        self._plot = da.plot(ax=self.mplcanvas.axes)
         self.mplcanvas.draw()
 
     def update_plot(self, color):
@@ -177,13 +182,15 @@ def detect_roms_file(filepath):
             return key
 
 
-def last2d(data_array):
-    if data_array.ndim <= 2:
-        return data_array
+def last2d(da):
+    if da.ndim <= 2:
+        return da
 
-    slc = [0] * (data_array.ndim - 2)
+    slc = [0] * (da.ndim - 2)
     slc += [slice(None), slice(None)]
-    return slc
+    slc = {d: s for d, s in zip(da.dims, slc)}
+
+    return da.isel(**slc)
 
 
 def not_implemented():
