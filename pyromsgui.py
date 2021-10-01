@@ -1,11 +1,13 @@
-from datetime import time
 import sys
 from os.path import basename
 from functools import partial
 
 import numpy as np
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import xarray as xr
+
+# import cartopy.crs as ccrs
 
 mpl.use("Qt5Agg")
 
@@ -28,11 +30,11 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 
-from mpl.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT as NavigationToolbar,
 )
-from mpl.figure import Figure
+from matplotlib.figure import Figure
 
 from settings import *
 
@@ -48,7 +50,7 @@ class Ui(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setWindowTitle("ROMSPyGUI")
+        self.setWindowTitle("ROMSView")
         # self.setSize(800, 600)
         self.generalLayout = QHBoxLayout()
         # Set the central widget
@@ -89,17 +91,17 @@ class Ui(QMainWindow):
         self.recs = QComboBox()
         layout.addWidget(self.recs)
 
-        plot_types = QComboBox()
-        plot_types.addItems(["contourf", "pcolormesh", "scatter"])
-        layout.addWidget(plot_types)
+        # plot_types = QComboBox()
+        # plot_types.addItems(["contourf", "pcolormesh", "scatter"])
+        # layout.addWidget(plot_types)
 
         colorbars = QComboBox()
-        colorbars.addItems(["black", "blue", "red", "green"])
-        colorbars.activated[str].connect(self.set_plot_color)
+        colorbars.addItems(["viridis", "jet", "RdBu"])
+        colorbars.activated[str].connect(self.set_colorbar)
         layout.addWidget(colorbars)
 
         alpha = QSlider(Qt.Horizontal)
-        alpha.setValue(50)
+        alpha.setValue(100)
         alpha.valueChanged[int].connect(self.set_plot_alpha)
         layout.addWidget(alpha)
 
@@ -114,7 +116,7 @@ class Ui(QMainWindow):
 
     def _createMplCanvas(self):
         self.mplcanvas = MplCanvas(self, width=5, height=4, dpi=100)
-        self.update_plot("k")
+        self.init_plot()
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
         toolbar = NavigationToolbar(self.mplcanvas, self)
@@ -146,15 +148,24 @@ class Ui(QMainWindow):
         if filename:
             self.hslice(filename)
 
+    def _reset_mpl_axes(self):
+        for ax in self.mplcanvas.figure.axes:
+            ax.remove()
+
+        self.mplcanvas.axes = self.mplcanvas.figure.add_subplot(111)
+
+    def init_plot(self):
+        img = plt.imread("./icons/welcome.png")
+        self._plot = self.mplcanvas.axes.imshow(img)
+        self.mplcanvas.axes.set_axis_off()
+        self.mplcanvas.draw()
+
     def hslice(self, filename, variable=None):
         ds = xr.open_dataset(filename)
         var = variable or getattr(firstvar, detect_roms_file(filename))
         da = ds[var]
         da = last2d(da)
-        for ax in self.mplcanvas.figure.axes:
-            ax.remove()
-
-        self.mplcanvas.axes = self.mplcanvas.figure.add_subplot(111)
+        self._reset_mpl_axes()
 
         self._plot = da.plot(ax=self.mplcanvas.axes)
         self.mplcanvas.draw()
@@ -174,15 +185,12 @@ class Ui(QMainWindow):
                 break
 
     def set_colorbar(self, cbar):
-        for line2d in self._plot:
-            line2d.set_color(color)
+        self._plot.set_cmap(getattr(plt.cm, cbar))
 
         self.mplcanvas.draw()
 
     def set_plot_alpha(self, val):
-        for line2d in self._plot:
-            line2d.set_alpha(val / 100)
-
+        self._plot.set_alpha(val / 100)
         self.mplcanvas.draw()
 
 
