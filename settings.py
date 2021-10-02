@@ -11,6 +11,7 @@ class RomsNCFiles:
     bry: str
     clm: str
     his: str
+    rst: str
     avg: str
     qks: str
     dia: str
@@ -51,6 +52,7 @@ REP_VAR = RomsNCFiles(
     bry="temp_west",
     clm="temp",
     his="temp",
+    rst="temp",
     avg="temp",
     qks="temp",
     dia="undefined",

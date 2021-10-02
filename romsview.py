@@ -234,6 +234,19 @@ class Ui(QMainWindow):
         self._update_times()
         self._update_levels()
 
+    def vslice(self):
+        # leaving some hints on how to expand lon/lat dims for vslices
+        # pcolormesh(
+        #     self._state.ds.lat_rho.isel(xi_rho=0).expand_dims(
+        #         {"s_rho": range(self._state.ds.dims["s_rho"])}, 0
+        #     ),
+        #     self._state.ds.z_rho.isel(ocean_time=0, xi_rho=0),
+        #     self._state.dstemp.isel(ocean_time=0, xi_rho=0),
+        # )
+        # coords can't be masked or have nans (z_rho), so need to work that out
+
+        pass
+
     def _reset_range(self, vmin, vmax):
         self._state.vmin = vmin
         self._state.vmax = vmax
