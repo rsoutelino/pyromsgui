@@ -85,20 +85,35 @@ class Ui(QMainWindow):
     def _createSideBar(self):
         layout = QVBoxLayout()
 
-        self.variables = QComboBox()
-        layout.addWidget(self.variables)
+        self.var_selector = QComboBox()
+        self.var_selector.setToolTip("Variables")
+        self.var_selector.addItem("Variables")
+        self.var_selector.setDisabled(True)
+        self.var_selector.activated[str].connect(self.hslice)
+        layout.addWidget(self.var_selector)
 
-        self.recs = QComboBox()
-        layout.addWidget(self.recs)
+        self.time_selector = QComboBox()
+        self.time_selector.setToolTip("Times")
+        self.time_selector.addItem("Times")
+        self.time_selector.setDisabled(True)
+        layout.addWidget(self.time_selector)
+
+        self.lev_selector = QComboBox()
+        self.lev_selector.setToolTip("Levels")
+        self.lev_selector.addItem("Levels")
+        self.lev_selector.setDisabled(True)
+        layout.addWidget(self.lev_selector)
 
         # plot_types = QComboBox()
         # plot_types.addItems(["contourf", "pcolormesh", "scatter"])
         # layout.addWidget(plot_types)
 
-        colorbars = QComboBox()
-        colorbars.addItems(["viridis", "jet", "RdBu"])
-        colorbars.activated[str].connect(self.set_colorbar)
-        layout.addWidget(colorbars)
+        self.cbar_selector = QComboBox()
+        self.cbar_selector.setToolTip("Colorbars")
+        self.cbar_selector.addItems(["viridis", "jet", "RdBu"])
+        self.cbar_selector.activated[str].connect(self.set_colorbar)
+        self.cbar_selector.setDisabled(True)
+        layout.addWidget(self.cbar_selector)
 
         alpha = QSlider(Qt.Horizontal)
         alpha.setValue(100)
@@ -131,9 +146,9 @@ class Ui(QMainWindow):
         self.generalLayout.addWidget(widget)
 
     def _createStatusBar(self):
-        status = QStatusBar()
-        status.showMessage("Ready...")
-        self.setStatusBar(status)
+        self.status = QStatusBar()
+        self.status.showMessage("Ready...")
+        self.setStatusBar(self.status)
 
     def openFile(self, pattern="*.nc"):
         options = QFileDialog.Options()
@@ -146,7 +161,11 @@ class Ui(QMainWindow):
             options=options,
         )
         if filename:
-            self.hslice(filename)
+            self.status.showMessage(f"Current file: {filename}")
+            self._load_dataset(filename)
+            # getting a representative var based on settings.rep_var
+            rep_var = getattr(REP_VAR, detect_roms_file(filename))
+            self.hslice(var=rep_var)
 
     def _reset_mpl_axes(self):
         for ax in self.mplcanvas.figure.axes:
@@ -160,33 +179,42 @@ class Ui(QMainWindow):
         self.mplcanvas.axes.set_axis_off()
         self.mplcanvas.draw()
 
-    def hslice(self, filename, variable=None):
-        ds = xr.open_dataset(filename)
-        var = variable or getattr(firstvar, detect_roms_file(filename))
-        da = ds[var]
+    def _load_dataset(self, filename):
+        self._ds = xr.open_dataset(filename)
+
+    def hslice(self, var=None):
+        da = self._ds[var]
         da = last2d(da)
         self._reset_mpl_axes()
 
         self._plot = da.plot(ax=self.mplcanvas.axes)
+        if hasattr(self._plot, "set_cmap"):
+            self.set_colorbar(cbar=self.cbar_selector.currentText())
         self.mplcanvas.draw()
 
         # update variables
-        self.variables.clear()
-        self.variables.addItems(ds.data_vars.keys())
-        self.variables.setCurrentText(var)
+        self.var_selector.setEnabled(True)
+        self.var_selector.clear()
+        self.var_selector.addItems(self._ds.data_vars.keys())
+        self.var_selector.setCurrentText(var)
+
+        # enable colorbar selection
+        self.cbar_selector.setEnabled(True)
 
         # update time records
-        self.recs.clear()
-        for dim in ds.dims.keys():
+        for dim in self._ds.dims.keys():
             if "time" in dim:
-                times = [str(t).split(".")[0].replace("T", " ") for t in ds[dim].values]
-                self.recs.addItems(times)
-                self.recs.setCurrentText(var)
+                self.var_selector.setEnabled(True)
+                self.time_selector.clear()
+                times = [
+                    str(t).split(".")[0].replace("T", " ") for t in self._ds[dim].values
+                ]
+                self.time_selector.addItems(times)
+                self.time_selector.setCurrentText(var)
                 break
 
     def set_colorbar(self, cbar):
         self._plot.set_cmap(getattr(plt.cm, cbar))
-
         self.mplcanvas.draw()
 
     def set_plot_alpha(self, val):

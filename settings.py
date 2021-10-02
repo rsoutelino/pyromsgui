@@ -17,7 +17,8 @@ class RomsNCFiles:
     tides: str
 
 
-firstvar = RomsNCFiles(
+# representative variable for each ROMS file
+REP_VAR = RomsNCFiles(
     grd="h",
     nud="temp_NudgeCoef",
     ini="temp",
