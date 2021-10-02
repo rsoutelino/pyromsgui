@@ -88,37 +88,37 @@ class Ui(QMainWindow):
     def _createSideBar(self):
         layout = QVBoxLayout()
 
-        self.var_selector = QComboBox()
-        self.var_selector.setToolTip("Variables")
-        self.var_selector.addItem("Variables")
-        self.var_selector.setDisabled(True)
-        self.var_selector.activated[str].connect(self.toggle_var)
-        layout.addWidget(self.var_selector)
+        self.varSelector = QComboBox()
+        self.varSelector.setToolTip("Variables")
+        self.varSelector.addItem("Variables")
+        self.varSelector.setDisabled(True)
+        self.varSelector.activated[str].connect(self.toggle_var)
+        layout.addWidget(self.varSelector)
 
-        self.time_selector = QComboBox()
-        self.time_selector.setToolTip("Times")
-        self.time_selector.addItem("Times")
-        self.time_selector.setDisabled(True)
-        self.time_selector.activated[str].connect(self.toggle_time)
-        layout.addWidget(self.time_selector)
+        self.timeSelector = QComboBox()
+        self.timeSelector.setToolTip("Times")
+        self.timeSelector.addItem("Times")
+        self.timeSelector.setDisabled(True)
+        self.timeSelector.activated[str].connect(self.toggle_time)
+        layout.addWidget(self.timeSelector)
 
-        self.lev_selector = QComboBox()
-        self.lev_selector.setToolTip("Levels")
-        self.lev_selector.addItem("Levels")
-        self.lev_selector.setDisabled(True)
-        self.lev_selector.activated[str].connect(self.toggle_lev)
-        layout.addWidget(self.lev_selector)
+        self.levSelector = QComboBox()
+        self.levSelector.setToolTip("Levels")
+        self.levSelector.addItem("Levels")
+        self.levSelector.setDisabled(True)
+        self.levSelector.activated[str].connect(self.toggle_lev)
+        layout.addWidget(self.levSelector)
 
         # plot_types = QComboBox()
         # plot_types.addItems(["contourf", "pcolormesh", "scatter"])
         # layout.addWidget(plot_types)
 
-        self.cbar_selector = QComboBox()
-        self.cbar_selector.setToolTip("Colorbars")
-        self.cbar_selector.addItems(["viridis", "jet", "RdBu_r"])
-        self.cbar_selector.activated[str].connect(self.set_colorbar)
-        self.cbar_selector.setDisabled(True)
-        layout.addWidget(self.cbar_selector)
+        self.cbarSelector = QComboBox()
+        self.cbarSelector.setToolTip("Colorbars")
+        self.cbarSelector.addItems(["viridis", "jet", "RdBu_r"])
+        self.cbarSelector.activated[str].connect(self.set_colorbar)
+        self.cbarSelector.setDisabled(True)
+        layout.addWidget(self.cbarSelector)
 
         alpha = QSlider(Qt.Horizontal)
         alpha.setValue(100)
@@ -189,7 +189,7 @@ class Ui(QMainWindow):
         # getting a representative var based on settings.rep_var
         rep_var = getattr(REP_VAR, self._state.filetype)
         self._state.da = last2d(self._state.ds[rep_var])
-        self.hslice()
+        self.hslice(var_changed=True)
 
     def _reset_mpl_axes(self):
         for ax in self.mplcanvas.figure.axes:
@@ -206,24 +206,27 @@ class Ui(QMainWindow):
     def _load_dataset(self, filename):
         self._state.ds = xr.open_dataset(filename)
 
-    def hslice(self):
+    def hslice(self, var_changed=False):
         self._reset_mpl_axes()
 
         self._plot = self._state.da.plot(ax=self.mplcanvas.axes)
         if hasattr(self._plot, "set_cmap"):
-            self.cbar_selector.setEnabled(True)
+            self.cbarSelector.setEnabled(True)
             self.rangeBox.setEnabled(True)
 
-            if hasattr(self._state, "vmin") and hasattr(self._state, "vmax"):
+            if (
+                hasattr(self._state, "vmin") and hasattr(self._state, "vmax")
+            ) and not var_changed:
                 self._plot.set_norm(
                     mpl.colors.Normalize(self._state.vmin, self._state.vmax)
                 )
             else:
-                self._init_range(np.nanmin(self._state.da), np.nanmax(self._state.da))
+                self._reset_range(np.nanmin(self._state.da), np.nanmax(self._state.da))
 
-            self.set_colorbar(cbar=self.cbar_selector.currentText())
+            self.set_colorbar(cbar=self.cbarSelector.currentText())
         else:
-            self.cbar_selector.setDisabled(True)
+            self.cbarSelector.setDisabled(True)
+            self.rangeBox.setDisabled(True)
 
         self.mplcanvas.draw()
 
@@ -231,15 +234,17 @@ class Ui(QMainWindow):
         self._update_times()
         self._update_levels()
 
-    def _init_range(self, vmin, vmax):
+    def _reset_range(self, vmin, vmax):
         self._state.vmin = vmin
         self._state.vmax = vmax
+        self.vmin.setText(f"{vmin:0.6f}")
+        self.vmax.setText(f"{vmax:0.6f}")
 
     def _update_vars(self):
-        self.var_selector.setEnabled(True)
-        self.var_selector.clear()
-        self.var_selector.addItems(self._state.ds.data_vars.keys())
-        self.var_selector.setCurrentText(self._state.da.name)
+        self.varSelector.setEnabled(True)
+        self.varSelector.clear()
+        self.varSelector.addItems(self._state.ds.data_vars.keys())
+        self.varSelector.setCurrentText(self._state.da.name)
 
     def _update_times(self):
         for dim in self._state.ds.dims.keys():
@@ -248,31 +253,31 @@ class Ui(QMainWindow):
                 and self._state.filetype not in ["grd"]
                 and dim in self._state.da.coords.keys()
             ):
-                self.time_selector.setEnabled(True)
-                self.time_selector.clear()
+                self.timeSelector.setEnabled(True)
+                self.timeSelector.clear()
                 times = [numpydatetime2str(t) for t in self._state.ds[dim].values]
-                self.time_selector.addItems(times)
+                self.timeSelector.addItems(times)
                 current = numpydatetime2str(self._state.da[dim].values)
-                self.time_selector.setCurrentText(current)
+                self.timeSelector.setCurrentText(current)
                 break
 
-            self.time_selector.setDisabled(True)
+            self.timeSelector.setDisabled(True)
 
     def _update_levels(self):
         for dim, val in self._state.ds.dims.items():
             if (
                 "s_rho" in dim
-                and self._state.filetype not in ["grd"]
+                and self._state.filetype not in ["grd", "bry"]
                 and dim in self._state.da.coords.keys()
             ):
-                self.lev_selector.setEnabled(True)
-                self.lev_selector.clear()
+                self.levSelector.setEnabled(True)
+                self.levSelector.clear()
                 levels = [str(l) for l in self._state.ds[dim].values]
-                self.lev_selector.addItems(levels)
-                self.lev_selector.setCurrentText(str(self._state.da[dim].values))
+                self.levSelector.addItems(levels)
+                self.levSelector.setCurrentText(str(self._state.da[dim].values))
                 break
 
-            self.lev_selector.setDisabled(True)
+            self.levSelector.setDisabled(True)
 
     def toggle_var(self, var):
         _slice = {}
@@ -283,13 +288,13 @@ class Ui(QMainWindow):
                 _slice[dim] = val
 
         self._state.da = last2d(self._state.ds[var].sel(**_slice))
-        self.hslice()
+        self.hslice(var_changed=True)
 
     def toggle_time(self, timestamp):
         _slice = self._state.current_slice.copy()
         for key in _slice.keys():
             if "time" in key:
-                _slice[key] = self.time_selector.currentText()
+                _slice[key] = self.timeSelector.currentText()
 
                 self._state.da = last2d(self._state.ds[self._state.var].sel(**_slice))
                 self.hslice()
@@ -299,7 +304,7 @@ class Ui(QMainWindow):
         _slice = self._state.current_slice.copy()
         for key in _slice.keys():
             if "s_rho" in key:
-                _slice[key] = self.lev_selector.currentText()
+                _slice[key] = self.levSelector.currentText()
 
                 self._state.da = last2d(self._state.ds[self._state.var].sel(**_slice))
                 self.hslice()
