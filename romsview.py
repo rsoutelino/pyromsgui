@@ -53,7 +53,7 @@ class Ui(QMainWindow):
         super().__init__(*args, **kwargs)
 
         self.setWindowTitle("ROMSView")
-        # self.setSize(800, 600)
+        self._state = AppState()
         self.generalLayout = QHBoxLayout()
         # Set the central widget
         self.centralWidget = QWidget(self)
@@ -98,12 +98,14 @@ class Ui(QMainWindow):
         self.time_selector.setToolTip("Times")
         self.time_selector.addItem("Times")
         self.time_selector.setDisabled(True)
+        self.time_selector.activated[str].connect(self.set_time)
         layout.addWidget(self.time_selector)
 
         self.lev_selector = QComboBox()
         self.lev_selector.setToolTip("Levels")
         self.lev_selector.addItem("Levels")
         self.lev_selector.setDisabled(True)
+        self.lev_selector.activated[str].connect(self.set_lev)
         layout.addWidget(self.lev_selector)
 
         # plot_types = QComboBox()
@@ -119,7 +121,7 @@ class Ui(QMainWindow):
 
         alpha = QSlider(Qt.Horizontal)
         alpha.setValue(100)
-        alpha.valueChanged[int].connect(self.set_plot_alpha)
+        alpha.valueChanged[int].connect(self.set_alpha)
         layout.addWidget(alpha)
 
         layout.addWidget(QPushButton("Vmin"))
@@ -170,7 +172,8 @@ class Ui(QMainWindow):
         self._load_dataset(filename)
         # getting a representative var based on settings.rep_var
         rep_var = getattr(REP_VAR, detect_roms_file(filename))
-        self.hslice(var=rep_var)
+        self._state.da = last2d(self._state.ds[rep_var])
+        self.hslice()
 
     def _reset_mpl_axes(self):
         for ax in self.mplcanvas.figure.axes:
@@ -185,51 +188,74 @@ class Ui(QMainWindow):
         self.mplcanvas.draw()
 
     def _load_dataset(self, filename):
-        self._ds = xr.open_dataset(filename)
+        self._state.ds = xr.open_dataset(filename)
 
-    def hslice(self, var=None):
-        da = self._ds[var]
-        da = last2d(da)
+    def hslice(self):
         self._reset_mpl_axes()
 
-        self._plot = da.plot(ax=self.mplcanvas.axes)
+        self._plot = self._state.da.plot(ax=self.mplcanvas.axes)
         if hasattr(self._plot, "set_cmap"):
+            self.cbar_selector.setEnabled(True)
             self.set_colorbar(cbar=self.cbar_selector.currentText())
+        else:
+            self.cbar_selector.setDisabled(True)
 
         self.mplcanvas.draw()
 
-        # update variables
+        self._update_vars()
+        self._update_times()
+        self._update_levels()
+
+    def _update_vars(self):
         self.var_selector.setEnabled(True)
         self.var_selector.clear()
-        self.var_selector.addItems(self._ds.data_vars.keys())
-        self.var_selector.setCurrentText(var)
+        self.var_selector.addItems(self._state.ds.data_vars.keys())
+        self.var_selector.setCurrentText(self._state.da.name)
 
-        # enable colorbar selection
-        self.cbar_selector.setEnabled(True)
-
-        # update time records
-        for dim in self._ds.dims.keys():
+    def _update_times(self):
+        for dim in self._state.ds.dims.keys():
             if "time" in dim:
                 self.time_selector.setEnabled(True)
                 self.time_selector.clear()
-                times = [
-                    str(t).split(".")[0].replace("T", " ") for t in self._ds[dim].values
-                ]
+                times = [numpydatetime2str(t) for t in self._state.ds[dim].values]
                 self.time_selector.addItems(times)
+                current = numpydatetime2str(self._state.da[dim].values)
+                self.time_selector.setCurrentText(current)
                 break
 
             self.time_selector.setDisabled(True)
 
-        # update levels
-        for dim in self._ds.dims.keys():
+    def _update_levels(self):
+        for dim in self._state.ds.dims.keys():
             if "s_rho" in dim:
                 self.lev_selector.setEnabled(True)
                 self.lev_selector.clear()
-                levels = [str(l) for l in self._ds[dim].values]
+                levels = [str(l) for l in self._state.ds[dim].values]
                 self.lev_selector.addItems(levels)
+                self.lev_selector.setCurrentText(str(self._state.da[dim].values))
                 break
 
             self.lev_selector.setDisabled(True)
+
+    def set_time(self, timestamp):
+        _slice = self._state.current_slice.copy()
+        for key in _slice.keys():
+            if "time" in key:
+                _slice[key] = self.time_selector.currentText()
+
+                self._state.da = last2d(self._state.ds[self._state.var].sel(**_slice))
+                self.hslice()
+                break
+
+    def set_lev(self, lev):
+        _slice = self._state.current_slice.copy()
+        for key in _slice.keys():
+            if "s_rho" in key:
+                _slice[key] = self.lev_selector.currentText()
+
+                self._state.da = last2d(self._state.ds[self._state.var].sel(**_slice))
+                self.hslice()
+                break
 
     def set_colorbar(self, cbar):
         if hasattr(self._plot, "set_cmap"):
@@ -238,7 +264,7 @@ class Ui(QMainWindow):
         else:
             not_found_dialog("Colorbar does not apply to this plot")
 
-    def set_plot_alpha(self, val):
+    def set_alpha(self, val):
         self._plot.set_alpha(val / 100)
         self.mplcanvas.draw()
 
@@ -247,6 +273,10 @@ def detect_roms_file(filepath):
     for key in RomsNCFiles.__dataclass_fields__.keys():
         if key in basename(filepath):
             return key
+
+
+def numpydatetime2str(numpydatetime):
+    return str(numpydatetime).split(".")[0].replace("T", " ")
 
 
 def last2d(da):
