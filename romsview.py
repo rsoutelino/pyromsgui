@@ -174,7 +174,6 @@ class Ui(QMainWindow):
         # getting a representative var based on settings.rep_var
         rep_var = getattr(REP_VAR, self._state.filetype)
         self._state.da = last2d(self._state.ds[rep_var])
-        print(self._state.da.coords)
         self.hslice()
 
     def _reset_mpl_axes(self):
@@ -216,7 +215,11 @@ class Ui(QMainWindow):
 
     def _update_times(self):
         for dim in self._state.ds.dims.keys():
-            if "time" in dim and self._state.filetype not in ["grd"]:
+            if (
+                "time" in dim
+                and self._state.filetype not in ["grd"]
+                and dim in self._state.da.coords.keys()
+            ):
                 self.time_selector.setEnabled(True)
                 self.time_selector.clear()
                 times = [numpydatetime2str(t) for t in self._state.ds[dim].values]
@@ -228,8 +231,12 @@ class Ui(QMainWindow):
             self.time_selector.setDisabled(True)
 
     def _update_levels(self):
-        for dim in self._state.ds.dims.keys():
-            if "s_rho" in dim and self._state.filetype not in ["grd"]:
+        for dim, val in self._state.ds.dims.items():
+            if (
+                "s_rho" in dim
+                and self._state.filetype not in ["grd"]
+                and dim in self._state.da.coords.keys()
+            ):
                 self.lev_selector.setEnabled(True)
                 self.lev_selector.clear()
                 levels = [str(l) for l in self._state.ds[dim].values]
@@ -240,7 +247,13 @@ class Ui(QMainWindow):
             self.lev_selector.setDisabled(True)
 
     def toggle_var(self, var):
-        _slice = self._state.current_slice.copy()
+        _slice = {}
+        # need to remove dimensions that don't exist in the new var
+        # if that's the case (Ex, toggling from 3D to 2D var)
+        for dim, val in self._state.current_slice.items():
+            if dim in self._state.ds[var].dims:
+                _slice[dim] = val
+
         self._state.da = last2d(self._state.ds[var].sel(**_slice))
         self.hslice()
 
