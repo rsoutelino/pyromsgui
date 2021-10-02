@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 import sys
 from os.path import basename
 from functools import partial
@@ -11,12 +12,13 @@ import xarray as xr
 
 mpl.use("Qt5Agg")
 
-from PyQt5.QtWidgets import QApplication, QComboBox
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (
+    QMainWindow,
+    QApplication,
+    QWidget,
+    QComboBox,
     QLineEdit,
     QDialog,
     QSlider,
@@ -66,15 +68,15 @@ class Ui(QMainWindow):
 
     def _createMenu(self):
         self.fileMenu = self.menuBar().addMenu("&File")
-        self.fileMenu.addAction("&Load roms_grd.nc", not_implemented)
-        self.fileMenu.addAction("&Load roms_clm.nc", not_implemented)
-        self.fileMenu.addAction("&Load roms_ini.nc", not_implemented)
-        self.fileMenu.addAction("&Load roms_his.nc", not_implemented)
+        self.fileMenu.addAction("&Load roms_grd.nc", not_found_dialog)
+        self.fileMenu.addAction("&Load roms_clm.nc", not_found_dialog)
+        self.fileMenu.addAction("&Load roms_ini.nc", not_found_dialog)
+        self.fileMenu.addAction("&Load roms_his.nc", not_found_dialog)
         self.fileMenu.addAction("&Quit", self.close)
 
         self.toolsMenu = self.menuBar().addMenu("&Plot")
-        self.toolsMenu.addAction("&Hslice", not_implemented)
-        self.toolsMenu.addAction("&Vslice", not_implemented)
+        self.toolsMenu.addAction("&Hslice", not_found_dialog)
+        self.toolsMenu.addAction("&Vslice", not_found_dialog)
 
     def _createToolBar(self):
         tools = QToolBar()
@@ -125,7 +127,7 @@ class Ui(QMainWindow):
 
         widget = QWidget()
         widget.setLayout(layout)
-        widget.setFixedWidth(180)
+        widget.setFixedWidth(185)
 
         self.generalLayout.addWidget(widget)
 
@@ -161,11 +163,14 @@ class Ui(QMainWindow):
             options=options,
         )
         if filename:
-            self.status.showMessage(f"Current file: {filename}")
-            self._load_dataset(filename)
-            # getting a representative var based on settings.rep_var
-            rep_var = getattr(REP_VAR, detect_roms_file(filename))
-            self.hslice(var=rep_var)
+            self.onOpenFile(filename)
+
+    def onOpenFile(self, filename):
+        self.status.showMessage(f"Current file: {filename}")
+        self._load_dataset(filename)
+        # getting a representative var based on settings.rep_var
+        rep_var = getattr(REP_VAR, detect_roms_file(filename))
+        self.hslice(var=rep_var)
 
     def _reset_mpl_axes(self):
         for ax in self.mplcanvas.figure.axes:
@@ -190,6 +195,7 @@ class Ui(QMainWindow):
         self._plot = da.plot(ax=self.mplcanvas.axes)
         if hasattr(self._plot, "set_cmap"):
             self.set_colorbar(cbar=self.cbar_selector.currentText())
+
         self.mplcanvas.draw()
 
         # update variables
@@ -204,18 +210,33 @@ class Ui(QMainWindow):
         # update time records
         for dim in self._ds.dims.keys():
             if "time" in dim:
-                self.var_selector.setEnabled(True)
+                self.time_selector.setEnabled(True)
                 self.time_selector.clear()
                 times = [
                     str(t).split(".")[0].replace("T", " ") for t in self._ds[dim].values
                 ]
                 self.time_selector.addItems(times)
-                self.time_selector.setCurrentText(var)
                 break
 
+            self.time_selector.setDisabled(True)
+
+        # update levels
+        for dim in self._ds.dims.keys():
+            if "s_rho" in dim:
+                self.lev_selector.setEnabled(True)
+                self.lev_selector.clear()
+                levels = [str(l) for l in self._ds[dim].values]
+                self.lev_selector.addItems(levels)
+                break
+
+            self.lev_selector.setDisabled(True)
+
     def set_colorbar(self, cbar):
-        self._plot.set_cmap(getattr(plt.cm, cbar))
-        self.mplcanvas.draw()
+        if hasattr(self._plot, "set_cmap"):
+            self._plot.set_cmap(getattr(plt.cm, cbar))
+            self.mplcanvas.draw()
+        else:
+            not_found_dialog("Colorbar does not apply to this plot")
 
     def set_plot_alpha(self, val):
         self._plot.set_alpha(val / 100)
@@ -239,11 +260,10 @@ def last2d(da):
     return da.isel(**slc)
 
 
-def not_implemented():
+def not_found_dialog(message="Coming soon..."):
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Critical)
-    # msg.setText("Error")
-    msg.setInformativeText("Coming soon...")
+    msg.setInformativeText(message)
     msg.setWindowTitle("Not found")
     msg.exec_()
 
@@ -271,9 +291,14 @@ def main():
     # palette.setColor(QPalette.HighlightedText, Qt.black)
     # app.setPalette(palette)
 
-    # Show the calculator's GUI
+    # Show the UI
     view = Ui()
+    view.setGeometry(2500, 60, 1000, 800)
     view.show()
+
+    if len(sys.argv) > 1:
+        view.onOpenFile(sys.argv[1])
+
     # Create instances of the model and the controller
     # model = evaluateExpression
     # Controller(model=model, view=view)
