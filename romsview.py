@@ -22,9 +22,10 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QDialog,
     QSlider,
-    QPushButton,
     QToolBar,
+    QGroupBox,
     QHBoxLayout,
+    QGridLayout,
     QStatusBar,
     QVBoxLayout,
     QMessageBox,
@@ -114,7 +115,7 @@ class Ui(QMainWindow):
 
         self.cbar_selector = QComboBox()
         self.cbar_selector.setToolTip("Colorbars")
-        self.cbar_selector.addItems(["viridis", "jet", "RdBu"])
+        self.cbar_selector.addItems(["viridis", "jet", "RdBu_r"])
         self.cbar_selector.activated[str].connect(self.set_colorbar)
         self.cbar_selector.setDisabled(True)
         layout.addWidget(self.cbar_selector)
@@ -124,8 +125,22 @@ class Ui(QMainWindow):
         alpha.valueChanged[int].connect(self.set_alpha)
         layout.addWidget(alpha)
 
-        layout.addWidget(QPushButton("Vmin"))
-        layout.addWidget(QPushButton("Vmax"))
+        self.rangeBox = QGroupBox()
+        vmin_label = QLabel("Vmin")
+        vmax_label = QLabel("Vmax")
+        self.vmin = QLineEdit()
+        self.vmax = QLineEdit()
+        rangeLayout = QGridLayout()
+        rangeLayout.addWidget(vmax_label, 0, 0, 1, 1)
+        rangeLayout.addWidget(self.vmax, 0, 1, 1, 1)
+        rangeLayout.addWidget(vmin_label, 1, 0, 1, 1)
+        rangeLayout.addWidget(self.vmin, 1, 1, 1, 1)
+        self.rangeBox.setLayout(rangeLayout)
+        self.rangeBox.setFixedHeight(100)
+        self.vmin.returnPressed.connect(self.set_range)
+        self.vmax.returnPressed.connect(self.set_range)
+        layout.addWidget(self.rangeBox)
+        self.rangeBox.setDisabled(True)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -197,6 +212,15 @@ class Ui(QMainWindow):
         self._plot = self._state.da.plot(ax=self.mplcanvas.axes)
         if hasattr(self._plot, "set_cmap"):
             self.cbar_selector.setEnabled(True)
+            self.rangeBox.setEnabled(True)
+
+            if hasattr(self._state, "vmin") and hasattr(self._state, "vmax"):
+                self._plot.set_norm(
+                    mpl.colors.Normalize(self._state.vmin, self._state.vmax)
+                )
+            else:
+                self._init_range(np.nanmin(self._state.da), np.nanmax(self._state.da))
+
             self.set_colorbar(cbar=self.cbar_selector.currentText())
         else:
             self.cbar_selector.setDisabled(True)
@@ -206,6 +230,10 @@ class Ui(QMainWindow):
         self._update_vars()
         self._update_times()
         self._update_levels()
+
+    def _init_range(self, vmin, vmax):
+        self._state.vmin = vmin
+        self._state.vmax = vmax
 
     def _update_vars(self):
         self.var_selector.setEnabled(True)
@@ -276,6 +304,22 @@ class Ui(QMainWindow):
                 self._state.da = last2d(self._state.ds[self._state.var].sel(**_slice))
                 self.hslice()
                 break
+
+    def set_range(self):
+        try:
+            vmin = float(self.vmin.text())
+            self._state.vmin = vmin
+        except:
+            vmin = self._state.vmin
+
+        try:
+            vmax = float(self.vmax.text())
+            self._state.vmax = vmax
+        except:
+            vmax = self._state.vmax
+
+        self._plot.set_norm(mpl.colors.Normalize(self._state.vmin, self._state.vmax))
+        self.mplcanvas.draw()
 
     def set_colorbar(self, cbar):
         if hasattr(self._plot, "set_cmap"):
