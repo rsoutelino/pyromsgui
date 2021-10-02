@@ -91,21 +91,21 @@ class Ui(QMainWindow):
         self.var_selector.setToolTip("Variables")
         self.var_selector.addItem("Variables")
         self.var_selector.setDisabled(True)
-        self.var_selector.activated[str].connect(self.hslice)
+        self.var_selector.activated[str].connect(self.toggle_var)
         layout.addWidget(self.var_selector)
 
         self.time_selector = QComboBox()
         self.time_selector.setToolTip("Times")
         self.time_selector.addItem("Times")
         self.time_selector.setDisabled(True)
-        self.time_selector.activated[str].connect(self.set_time)
+        self.time_selector.activated[str].connect(self.toggle_time)
         layout.addWidget(self.time_selector)
 
         self.lev_selector = QComboBox()
         self.lev_selector.setToolTip("Levels")
         self.lev_selector.addItem("Levels")
         self.lev_selector.setDisabled(True)
-        self.lev_selector.activated[str].connect(self.set_lev)
+        self.lev_selector.activated[str].connect(self.toggle_lev)
         layout.addWidget(self.lev_selector)
 
         # plot_types = QComboBox()
@@ -170,9 +170,11 @@ class Ui(QMainWindow):
     def onOpenFile(self, filename):
         self.status.showMessage(f"Current file: {filename}")
         self._load_dataset(filename)
+        self._state.filetype = detect_roms_file(filename)
         # getting a representative var based on settings.rep_var
-        rep_var = getattr(REP_VAR, detect_roms_file(filename))
+        rep_var = getattr(REP_VAR, self._state.filetype)
         self._state.da = last2d(self._state.ds[rep_var])
+        print(self._state.da.coords)
         self.hslice()
 
     def _reset_mpl_axes(self):
@@ -214,7 +216,7 @@ class Ui(QMainWindow):
 
     def _update_times(self):
         for dim in self._state.ds.dims.keys():
-            if "time" in dim:
+            if "time" in dim and self._state.filetype not in ["grd"]:
                 self.time_selector.setEnabled(True)
                 self.time_selector.clear()
                 times = [numpydatetime2str(t) for t in self._state.ds[dim].values]
@@ -227,7 +229,7 @@ class Ui(QMainWindow):
 
     def _update_levels(self):
         for dim in self._state.ds.dims.keys():
-            if "s_rho" in dim:
+            if "s_rho" in dim and self._state.filetype not in ["grd"]:
                 self.lev_selector.setEnabled(True)
                 self.lev_selector.clear()
                 levels = [str(l) for l in self._state.ds[dim].values]
@@ -237,7 +239,12 @@ class Ui(QMainWindow):
 
             self.lev_selector.setDisabled(True)
 
-    def set_time(self, timestamp):
+    def toggle_var(self, var):
+        _slice = self._state.current_slice.copy()
+        self._state.da = last2d(self._state.ds[var].sel(**_slice))
+        self.hslice()
+
+    def toggle_time(self, timestamp):
         _slice = self._state.current_slice.copy()
         for key in _slice.keys():
             if "time" in key:
@@ -247,7 +254,7 @@ class Ui(QMainWindow):
                 self.hslice()
                 break
 
-    def set_lev(self, lev):
+    def toggle_lev(self, lev):
         _slice = self._state.current_slice.copy()
         for key in _slice.keys():
             if "s_rho" in key:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import xarray as xr
+import numpy as np
 
 
 @dataclass
@@ -24,11 +24,15 @@ class AppState:
     ds: object = None
     da: object = None
     cbar: str = "viridis"
+    filetype: str = "grd"
 
     @property
     def current_slice(self):
-        slice_str = self.da._title_for_slice(truncate=1000)
         sliced = {}
+        slice_str = self.da._title_for_slice(truncate=np.inf)
+        if not slice_str:
+            return sliced
+
         for slc in slice_str.split(","):
             sliced[slc.split("=")[0].strip()] = slc.split("=")[1].strip()
 
