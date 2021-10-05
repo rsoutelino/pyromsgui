@@ -137,7 +137,7 @@ Pillow==5.1.0
 Pint==0.8.1
 pluggy==0.6.0
 prompt-toolkit==1.0.15
-psutil==5.0.1
+psutil==5.6.6
 psycopg2==2.7.5
 ptyprocess==0.6.0
 py==1.5.4
