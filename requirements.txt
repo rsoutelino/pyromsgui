@@ -125,7 +125,7 @@ ops-tide==0.1
 ordered-set==3.0.0
 packaging==18.0
 pandas==0.23.1
-paramiko==1.16.0
+paramiko==2.10.1
 Paste==2.0.3
 PasteDeploy==1.5.2
 PasteScript==2.0.2
