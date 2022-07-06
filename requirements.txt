@@ -98,7 +98,7 @@ kiwisolver==1.0.1
 kombu==3.0.37
 lockfile==0.12.2
 lsst-dd-rtd-theme==0.2.1
-lxml==4.2.1
+lxml==4.9.1
 Mako==1.0.7
 MarkupSafe==1.0
 matplotlib==2.2.3
